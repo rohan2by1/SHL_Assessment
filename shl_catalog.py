@@ -177,10 +177,10 @@ while True:
 # SAVE JSON
 # ------------------------
 
-with open("V1.json", "w", encoding="utf-8") as f:
+with open("shl_catalog.json", "w", encoding="utf-8") as f:
     json.dump(results, f, ensure_ascii=False, indent=2)
 
-print("Saved JSON: V1.json")
+print("Saved JSON: shl_catalog.json")
 
 # ------------------------
 # SAVE CSV
@@ -196,7 +196,7 @@ csv_columns = [
 ]
 
 with open(
-    "V1.csv",
+    "shl_catalog.csv",
     "w",
     newline="",
     encoding="utf-8"
@@ -212,7 +212,7 @@ with open(
     for row in results:
         writer.writerow(row)
 
-print("Saved CSV: V1.csv")
+print("Saved CSV: shl_catalog.csv")
 
 print(f"\nFinished scraping.")
 print(f"Total records collected: {len(results)}")

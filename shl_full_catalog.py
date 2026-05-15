@@ -7,7 +7,12 @@
 
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
+from urllib.parse import (
+    urljoin,
+    quote,
+    urlsplit,
+    urlunsplit
+)
 import json
 import csv
 import time
@@ -55,6 +60,7 @@ TEST_TYPE_MAP = {
 # =========================================================
 
 def clean_text(text):
+
     if not text:
         return ""
 
@@ -62,6 +68,7 @@ def clean_text(text):
 
 
 def extract_minutes(text):
+
     """
     Example:
     Approximate Completion Time in minutes = 9
@@ -73,6 +80,25 @@ def extract_minutes(text):
         return int(match.group(1))
 
     return None
+
+
+def encode_url(url):
+
+    """
+    Encodes spaces and special characters in URLs.
+    """
+
+    parts = urlsplit(url)
+
+    encoded_path = quote(parts.path)
+
+    return urlunsplit((
+        parts.scheme,
+        parts.netloc,
+        encoded_path,
+        parts.query,
+        parts.fragment
+    ))
 
 
 # =========================================================
@@ -94,6 +120,7 @@ def scrape_catalog():
         print(f"\nScraping catalog page: {url}")
 
         try:
+
             response = requests.get(
                 url,
                 headers=HEADERS,
@@ -179,9 +206,9 @@ def scrape_catalog():
                     "td.custom__table-heading__general"
                 )
 
-                # -------------------------------------
+                # =====================================
                 # Remote Testing
-                # -------------------------------------
+                # =====================================
 
                 remote_testing = False
 
@@ -193,9 +220,9 @@ def scrape_catalog():
                         ) is not None
                     )
 
-                # -------------------------------------
+                # =====================================
                 # Adaptive / IRT
-                # -------------------------------------
+                # =====================================
 
                 adaptive_irt = False
 
@@ -207,9 +234,9 @@ def scrape_catalog():
                         ) is not None
                     )
 
-                # -------------------------------------
+                # =====================================
                 # Test Type Codes
-                # -------------------------------------
+                # =====================================
 
                 test_type_codes = []
 
@@ -260,6 +287,7 @@ def scrape_catalog():
             time.sleep(REQUEST_DELAY)
 
         except Exception as e:
+
             print(f"Error: {e}")
             break
 
@@ -278,6 +306,7 @@ def scrape_detail_page(item):
     print(f"Scraping detail: {url}")
 
     try:
+
         response = requests.get(
             url,
             headers=HEADERS,
@@ -285,6 +314,7 @@ def scrape_detail_page(item):
         )
 
         if response.status_code != 200:
+
             print(f"Failed: {url}")
             return item
 
@@ -299,7 +329,8 @@ def scrape_detail_page(item):
 
         description = ""
 
-        # Default empty values
+        # Default values
+
         item["job_levels"] = []
         item["languages"] = []
         item["assessment_length_minutes"] = None
@@ -316,22 +347,23 @@ def scrape_detail_page(item):
                 heading.text
             )
 
-            # =========================================
+            # =====================================
             # DESCRIPTION
-            # =========================================
+            # =====================================
 
             if heading_text == "Description":
 
                 p = row.find("p")
 
                 if p:
+
                     description = clean_text(
                         p.text
                     )
 
-            # =========================================
+            # =====================================
             # JOB LEVELS
-            # =========================================
+            # =====================================
 
             elif heading_text == "Job levels":
 
@@ -340,14 +372,17 @@ def scrape_detail_page(item):
                 if p:
 
                     item["job_levels"] = [
+
                         clean_text(x)
+
                         for x in p.text.split(",")
+
                         if clean_text(x)
                     ]
 
-            # =========================================
+            # =====================================
             # LANGUAGES
-            # =========================================
+            # =====================================
 
             elif heading_text == "Languages":
 
@@ -356,14 +391,17 @@ def scrape_detail_page(item):
                 if p:
 
                     item["languages"] = [
+
                         clean_text(x)
+
                         for x in p.text.split(",")
+
                         if clean_text(x)
                     ]
 
-            # =========================================
+            # =====================================
             # ASSESSMENT LENGTH
-            # =========================================
+            # =====================================
 
             elif heading_text == "Assessment length":
 
@@ -406,10 +444,18 @@ def scrape_detail_page(item):
                 title_el.text
             )
 
-            download_url = title_el.get(
+            # =====================================
+            # FIX DOWNLOAD URL ENCODING
+            # =====================================
+
+            download_url_raw = title_el.get(
                 "href",
                 ""
             ).strip()
+
+            download_url = encode_url(
+                download_url_raw
+            )
 
             download_language = ""
 
@@ -430,7 +476,9 @@ def scrape_detail_page(item):
         return item
 
     except Exception as e:
+
         print(f"Detail scrape error: {e}")
+
         return item
 
 
@@ -602,12 +650,12 @@ if __name__ == "__main__":
 
     save_json(
         full_results,
-        "V2.json"
+        "shl_full_catalog.json"
     )
 
     save_csv(
         full_results,
-        "V2.csv"
+        "shl_full_catalog.csv"
     )
 
     print("\nDONE")
